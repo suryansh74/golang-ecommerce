@@ -2,10 +2,12 @@ package repository
 
 import (
 	"errors"
+	"log"
+
 	"go-ecommerce-app2/internal/domain"
+
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
-	"log"
 )
 
 // in this file there is port(interface => public), adapter(struct => private) and constructor returning structure
@@ -22,6 +24,7 @@ type UserRepository interface {
 	FindUserByID(id uint) (domain.User, error)
 	UpdateUser(id uint, user domain.User) (domain.User, error)
 	// more functions as go on
+	DeleteAllUser() error
 }
 
 // userRepository
@@ -71,4 +74,10 @@ func (ur userRepository) UpdateUser(id uint, user domain.User) (domain.User, err
 		return domain.User{}, err
 	}
 	return user, nil
+}
+
+func (ur userRepository) DeleteAllUser() error {
+	ur.db.Exec("DELETE FROM users")
+	log.Println("Delete All user function triggered")
+	return nil
 }

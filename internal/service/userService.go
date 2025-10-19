@@ -2,20 +2,26 @@ package service
 
 import (
 	"errors"
+	"fmt"
+	"log"
+	"time"
+
+	"go-ecommerce-app2/config"
 	"go-ecommerce-app2/internal/domain"
 	"go-ecommerce-app2/internal/dto"
 	"go-ecommerce-app2/internal/helper"
 	"go-ecommerce-app2/internal/repository"
+	"go-ecommerce-app2/pkg/notification"
+
 	"gorm.io/gorm"
-	"log"
-	"time"
 )
 
 // UserService
 // @Description: Inside service inject interface(port) not repository(adapter) domain UserRepo
 type UserService struct {
-	Repo repository.UserRepository
-	Auth helper.Auth
+	Repo   repository.UserRepository
+	Auth   helper.Auth
+	Config config.AppConfig
 }
 
 func (us UserService) findUserByEmail(email string) (*domain.User, error) {
@@ -55,7 +61,7 @@ func (us UserService) SignUp(input dto.UserSignUp) (string, error) {
 		return "", err
 	}
 
-	//generate token
+	// generate token
 	return us.Auth.GenerateToken(user.ID, user.Email, user.UserType)
 }
 
@@ -74,7 +80,6 @@ func (us UserService) Login(email string, password string) (string, error) {
 	// generate token and return
 
 	return us.Auth.GenerateToken(user.ID, user.Email, user.UserType)
-
 }
 
 func (us UserService) isVerifiedUser(id uint) bool {
@@ -82,10 +87,10 @@ func (us UserService) isVerifiedUser(id uint) bool {
 	return err == nil && currentUser.Verified
 }
 
-func (us UserService) GetVerificationCode(user domain.User) (int, error) {
+func (us UserService) GetVerificationCode(user domain.User) error {
 	// check if user is already verified
 	if us.isVerifiedUser(user.ID) {
-		return 0, errors.New("user already verified")
+		return errors.New("user already verified")
 	}
 
 	// generate verification code
@@ -96,7 +101,7 @@ func (us UserService) GetVerificationCode(user domain.User) (int, error) {
 	log.Printf("GenerateCode returned: code=%d, err=%v", code, err)
 
 	if err != nil {
-		return 0, err
+		return err
 	}
 
 	// ADD THIS DEBUG LINE TOO
@@ -109,13 +114,20 @@ func (us UserService) GetVerificationCode(user domain.User) (int, error) {
 
 	_, err = us.Repo.UpdateUser(user.ID, updatedUser)
 	if err != nil {
-		return 0, errors.New("unable to update verification code")
+		return errors.New("unable to update verification code")
 	}
 
-	// ADD THIS DEBUG LINE
-	log.Printf("Returning code: %d", code)
+	returnedUser, _ := us.Repo.FindUserByID(user.ID)
+	log.Println("**************************************************")
+	log.Println(returnedUser.Phone)
 
-	return code, nil
+	notificationClient := notification.NewNotificationClient(us.Config)
+	msg := fmt.Sprintf("Your Verification Code is:%v", code)
+	err = notificationClient.SendSMS(returnedUser.Phone, msg)
+	if err != nil {
+		return errors.New("error on sending SMS")
+	}
+	return nil
 }
 
 func (us UserService) VerifyCode(id uint, code int) error {
@@ -149,50 +161,40 @@ func (us UserService) VerifyCode(id uint, code int) error {
 		return errors.New("unable to update user")
 	}
 	return nil
-
 }
 
 func (us UserService) CreateProfile(id uint, input any) error {
-
 	return nil
 }
 
 func (us UserService) GetProfile(input any) (*domain.User, error) {
-
 	return nil, nil
 }
 
 func (us UserService) UpdateProfile(id int, input any) (string, error) {
-
 	return "", nil
 }
 
 func (us UserService) BecomeSeller(id int, input any) (string, error) {
-
 	return "", nil
 }
 
 func (us UserService) FindCart(id uint) ([]interface{}, error) {
-
 	return nil, nil
 }
 
 func (us UserService) CreateCart(input any, user domain.User) ([]interface{}, error) {
-
 	return nil, nil
 }
 
 func (us UserService) CreateOrder(user domain.User) (int, error) {
-
 	return 0, nil
 }
 
 func (us UserService) GetOrders(user domain.User) ([]interface{}, error) {
-
 	return nil, nil
 }
 
 func (us UserService) GetOrderByID(id uint, uID int) (interface{}, error) {
-
 	return nil, nil
 }

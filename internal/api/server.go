@@ -2,21 +2,23 @@ package api
 
 import (
 	"fmt"
-	"github.com/gofiber/fiber/v2"
+	"log"
+
 	"go-ecommerce-app2/config"
 	"go-ecommerce-app2/internal/api/rest"
 	"go-ecommerce-app2/internal/api/rest/handlers"
 	"go-ecommerce-app2/internal/domain"
 	"go-ecommerce-app2/internal/helper"
+
+	"github.com/gofiber/fiber/v2"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"log"
 )
 
 func StartServer(config config.AppConfig) {
 	app := fiber.New()
 
-	//log.Println(config.Dsn)
+	// log.Println(config.Dsn)
 	db, err := gorm.Open(postgres.Open(config.Dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("Database connection error:%v", err)
@@ -32,9 +34,10 @@ func StartServer(config config.AppConfig) {
 
 	// init rest handler
 	rh := &rest.RestHandler{
-		App:  app,
-		DB:   db,
-		Auth: auth,
+		App:    app,
+		DB:     db,
+		Auth:   auth,
+		Config: config,
 	}
 
 	SetupRoutes(rh)

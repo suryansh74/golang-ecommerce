@@ -1,12 +1,15 @@
 package handlers
 
 import (
-	"github.com/gofiber/fiber/v2"
+	"log"
+
 	"go-ecommerce-app2/internal/api/rest"
+	"go-ecommerce-app2/internal/domain"
 	"go-ecommerce-app2/internal/dto"
 	"go-ecommerce-app2/internal/repository"
 	"go-ecommerce-app2/internal/service"
-	"log"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 type UserHandler struct {
@@ -25,12 +28,12 @@ func SetupUserRoutes(rh *rest.RestHandler) {
 	handler := UserHandler{svc}
 
 	pubRoutes := app.Group("/users")
-	//public endpoints
+	// public endpoints
 	pubRoutes.Post("/register", handler.Register)
 	pubRoutes.Post("/login", handler.Login)
 
 	pvtRoutes := pubRoutes.Group("/", rh.Auth.Authorize)
-	//private endpoints
+	// private endpoints
 	pvtRoutes.Get("/verify", handler.GetVerificationCode)
 	pvtRoutes.Post("/verify", handler.Verify)
 	pvtRoutes.Get("/profile", handler.GetProfile)
@@ -40,6 +43,7 @@ func SetupUserRoutes(rh *rest.RestHandler) {
 	pvtRoutes.Get("/order", handler.GetOrders)
 	pvtRoutes.Get("/order/:id", handler.GetOrder)
 	pvtRoutes.Post("/become-seller", handler.BecomeSeller)
+	pvtRoutes.Delete("/delete-all-user", handler.DeleteUsers)
 }
 
 func (uh UserHandler) Register(ctx *fiber.Ctx) error {
@@ -88,7 +92,7 @@ func (uh UserHandler) Login(ctx *fiber.Ctx) error {
 
 func (uh UserHandler) GetVerificationCode(ctx *fiber.Ctx) error {
 	user := uh.svc.Auth.GetCurrentUser(ctx)
-	code, err := uh.svc.GetVerificationCode(user)
+	err := uh.svc.GetVerificationCode(user)
 	if err != nil {
 		if err.Error() == "user already verified" {
 			return ctx.Status(fiber.StatusBadRequest).JSON(&fiber.Map{
@@ -101,12 +105,10 @@ func (uh UserHandler) GetVerificationCode(ctx *fiber.Ctx) error {
 	}
 	return ctx.Status(fiber.StatusOK).JSON(&fiber.Map{
 		"message": "verification code generated",
-		"data":    code,
 	})
 }
 
 func (uh UserHandler) Verify(ctx *fiber.Ctx) error {
-
 	user := uh.svc.Auth.GetCurrentUser(ctx)
 
 	// validate incoming request
@@ -162,6 +164,8 @@ func (uh UserHandler) GetOrders(ctx *fiber.Ctx) error {
 }
 
 func (uh UserHandler) GetOrder(ctx *fiber.Ctx) error {
+	var user domain.User
+	uh.svc.Repo.CreateUser(user)
 	return ctx.Status(fiber.StatusOK).JSON(&fiber.Map{
 		"message": "get order",
 	})
@@ -170,5 +174,17 @@ func (uh UserHandler) GetOrder(ctx *fiber.Ctx) error {
 func (uh UserHandler) BecomeSeller(ctx *fiber.Ctx) error {
 	return ctx.Status(fiber.StatusOK).JSON(&fiber.Map{
 		"message": "become seller",
+	})
+}
+
+func (uh UserHandler) DeleteUsers(ctx *fiber.Ctx) error {
+	err := uh.svc.Repo.DeleteAllUser()
+	if err != nil {
+		return ctx.Status(fiber.StatusOK).JSON(&fiber.Map{
+			"message": "error while deleting",
+		})
+	}
+	return ctx.Status(fiber.StatusOK).JSON(&fiber.Map{
+		"message": "all users deleted successfully",
 	})
 }
