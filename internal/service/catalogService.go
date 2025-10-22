@@ -40,7 +40,11 @@ func (c *CatalogService) EditCategory(id uint, input dto.CreateCategoryRequest) 
 	return updatedCategory, err
 }
 
-func (c *CatalogService) DeleteCategory(input any) error {
+func (c *CatalogService) DeleteCategory(id uint) error {
+	err := c.Repo.DeleteCategory(id)
+	if err != nil {
+		return errors.New("category doesn't exist")
+	}
 	return nil
 }
 
@@ -58,4 +62,15 @@ func (c *CatalogService) GetCategories() ([]*domain.Category, error) {
 		return nil, errors.New("category is empty")
 	}
 	return categories, nil
+}
+
+// Product
+
+func (c *CatalogService) CreateProduct(input *domain.Product) error {
+	err := c.Repo.CreateProduct(input)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

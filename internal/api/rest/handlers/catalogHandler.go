@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"go-ecommerce-app2/internal/api/rest"
+	"go-ecommerce-app2/internal/domain"
 	"go-ecommerce-app2/internal/dto"
 	"go-ecommerce-app2/internal/repository"
 	"go-ecommerce-app2/internal/service"
@@ -83,12 +84,13 @@ func (ch CatalogHandler) CreateCategory(ctx *fiber.Ctx) error {
 }
 
 func (ch CatalogHandler) EditCategories(ctx *fiber.Ctx) error {
+	id, _ := strconv.Atoi(ctx.Params("id"))
 	req := dto.CreateCategoryRequest{}
 	err := ctx.BodyParser(&req)
 	if err != nil {
 		return rest.BadRequestError(ctx, "invalid request for create category")
 	}
-	updatedCategory, err := ch.svc.EditCategory(req)
+	updatedCategory, err := ch.svc.EditCategory(uint(id), req)
 	if err != nil {
 		return rest.InternalError(ctx, err)
 	}
@@ -96,11 +98,25 @@ func (ch CatalogHandler) EditCategories(ctx *fiber.Ctx) error {
 }
 
 func (ch CatalogHandler) DeleteCategories(ctx *fiber.Ctx) error {
-	return rest.ResponseMessage(ctx, "category deleted", nil)
+	id, _ := strconv.Atoi(ctx.Params("id"))
+	err := ch.svc.DeleteCategory(uint(id))
+	if err != nil {
+		return rest.ErrorMessage(ctx, 404, err)
+	}
+	return rest.ResponseMessage(ctx, "category delete successfull", nil)
 }
 
 func (ch CatalogHandler) CreateProduct(ctx *fiber.Ctx) error {
-	return rest.ResponseMessage(ctx, "product created", nil)
+	req := domain.Product{}
+	err := ctx.BodyParser(&req)
+	if err != nil {
+		return rest.BadRequestError(ctx, "invalid params for create products")
+	}
+	err = ch.svc.CreateProduct(&req)
+	if err != nil {
+		return rest.InternalError(ctx, err)
+	}
+	return rest.ResponseMessage(ctx, "product created successfully", nil)
 }
 
 func (ch CatalogHandler) GetProducts(ctx *fiber.Ctx) error {
