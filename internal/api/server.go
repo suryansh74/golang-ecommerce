@@ -28,7 +28,10 @@ func StartServer(config config.AppConfig) {
 	app.Get("/health", HealthCheck)
 
 	// run migration
-	db.AutoMigrate(&domain.User{})
+	err = db.AutoMigrate(&domain.User{}, &domain.BankAccount{}, &domain.Category{}, &domain.Product{})
+	if err != nil {
+		log.Fatalf("error on running migration", err)
+	}
 	auth := helper.SetupAuth(config.AppSecret)
 	log.Println("User migration successfully")
 
@@ -51,6 +54,7 @@ func SetupRoutes(rh *rest.RestHandler) {
 	// user routes
 	handlers.SetupUserRoutes(rh)
 	// catalog routes
+	handlers.SetupCatalogRoutes(rh)
 	// transaction routes
 }
 

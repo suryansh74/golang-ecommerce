@@ -23,7 +23,11 @@ type UserRepository interface {
 	FindUser(email string) (domain.User, error)
 	FindUserByID(id uint) (domain.User, error)
 	UpdateUser(id uint, user domain.User) (domain.User, error)
-	// more functions as go on
+
+	// bank
+	CreateBankAccount(e domain.BankAccount) error
+
+	// miscellaneous
 	DeleteAllUser() error
 }
 
@@ -31,6 +35,15 @@ type UserRepository interface {
 // @Description: Creating Adapter(struct) returned by constructor, can't call directly that's why it is private
 type userRepository struct {
 	db *gorm.DB
+}
+
+// CreateBankAccount implements UserRepository.
+func (ur userRepository) CreateBankAccount(e domain.BankAccount) error {
+	result := ur.db.Create(&e)
+	if result.Error != nil {
+		return errors.New("failed to create bank account")
+	}
+	return nil
 }
 
 func NewUserRepository(db *gorm.DB) UserRepository {

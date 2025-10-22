@@ -172,8 +172,25 @@ func (uh UserHandler) GetOrder(ctx *fiber.Ctx) error {
 }
 
 func (uh UserHandler) BecomeSeller(ctx *fiber.Ctx) error {
+	user := uh.svc.Auth.GetCurrentUser(ctx)
+	req := dto.SellerInput{}
+	err := ctx.BodyParser(&req)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(&fiber.Map{
+			"message": "invalid argument of become seller",
+		})
+	}
+
+	token, err := uh.svc.BecomeSeller(user.ID, req)
+	if err != nil {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(&fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
 	return ctx.Status(fiber.StatusOK).JSON(&fiber.Map{
 		"message": "become seller",
+		"token":   token,
 	})
 }
 

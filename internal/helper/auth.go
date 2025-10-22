@@ -3,12 +3,14 @@ package helper
 import (
 	"errors"
 	"fmt"
-	"github.com/gofiber/fiber/v2"
-	"github.com/golang-jwt/jwt/v4"
-	"go-ecommerce-app2/internal/domain"
-	"golang.org/x/crypto/bcrypt"
 	"strings"
 	"time"
+
+	"go-ecommerce-app2/internal/domain"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v4"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Auth struct {
@@ -62,7 +64,6 @@ func (a Auth) VerifyPassword(pP string, hP string) error {
 	}
 
 	return nil
-
 }
 
 func (a Auth) VerifyToken(tokenString string) (domain.User, error) {
@@ -100,7 +101,6 @@ func (a Auth) VerifyToken(tokenString string) (domain.User, error) {
 	}
 
 	return domain.User{}, errors.New("token verification failed")
-
 }
 
 func (a Auth) Authorize(ctx *fiber.Ctx) error {
@@ -129,4 +129,27 @@ func (a Auth) GetCurrentUser(ctx *fiber.Ctx) domain.User {
 
 func (a Auth) GenerateCode() (int, error) {
 	return RandomNumbers(6)
+}
+
+func (a Auth) AuthorizeSeller(ctx *fiber.Ctx) error {
+	authHeader := ctx.Get("Authorization")
+	if authHeader == "" {
+		return ctx.Status(401).JSON(&fiber.Map{
+			"message": "authorization header is required",
+		})
+	}
+	user, err := a.VerifyToken(authHeader)
+	if err != nil {
+		return ctx.Status(401).JSON(&fiber.Map{
+			"message": "authorization failed",
+			"reason":  err,
+		})
+	} else if user.ID > 0 && user.UserType == domain.SELLER {
+		ctx.Locals("user", user)
+		return ctx.Next()
+	}
+	return ctx.Status(401).JSON(&fiber.Map{
+		"message": "authorization failed",
+		"reason":  "please join seller program to manage products",
+	})
 }
